@@ -1,0 +1,221 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useCallback, useEffect } from "react"
+import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Palette, Loader2 } from "lucide-react"
+import { useWorkflowStore } from "@/stores/workflow-store"
+
+interface GenerateImageNodeData {
+  label: string
+  prompt: string
+  result: string | null
+  isProcessing?: boolean
+  error?: string
+  generatedImage?: string
+  output?: string
+}
+
+export default function GenerateImageNode({ id, data }: NodeProps<GenerateImageNodeData>) {
+  const [prompt, setPrompt] = useState(data.prompt || "")
+  const [referenceImages, setReferenceImages] = useState<string[]>([])
+  const { updateNode, nodes, edges, addNode } = useWorkflowStore()
+
+  useEffect(() => {
+    const connectedInputs = edges
+      .filter((edge) => edge.target === id)
+      .map((edge) => {
+        const sourceNode = nodes.find((n) => n.id === edge.source)
+        return sourceNode?.data.output
+      })
+      .filter(Boolean) as string[]
+
+    setReferenceImages(connectedInputs)
+  }, [id, edges, nodes])
+
+  const handlePromptChange = useCallback(
+    (value: string) => {
+      setPrompt(value)
+      updateNode(id, { prompt: value })
+    },
+    [id, updateNode],
+  )
+
+  const handleGenerate = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      
+      console.log("🎨 Generate button clicked, prompt:", prompt)
+
+      if (!prompt.trim()) {
+        console.log("❌ No prompt provided")
+        return
+      }
+
+      console.log("🔄 Starting generation...")
+      updateNode(id, { isProcessing: true, error: null })
+
+      try {
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: prompt }),
+        })
+
+        const result = await response.json()
+        console.log("Generate API response:", result)
+
+        if (result.success) {
+          console.log("Generated image URL preview:", result.imageUrl?.substring(0, 50))
+          
+          // Clear the processing state
+          updateNode(id, {
+            isProcessing: false,
+            output: result.imageUrl,
+          })
+
+          // Find current node position
+          const currentNode = nodes.find(n => n.id === id)
+          const baseX = currentNode?.position?.x || 0
+          const baseY = currentNode?.position?.y || 0
+
+          // Create a new result node
+          const resultNodeId = `result-${Date.now()}`
+          const newResultNode = {
+            id: resultNodeId,
+            type: 'imageResult',
+            position: {
+              x: baseX + 400, // Position to the right of the generate node
+              y: baseY
+            },
+            data: {
+              label: 'Generated Image',
+              imageUrl: result.imageUrl,
+              prompt: prompt,
+              description: result.description,
+              generatedAt: new Date().toLocaleTimeString(),
+              output: result.imageUrl // This allows connecting to other nodes
+            }
+          }
+
+          addNode(newResultNode)
+          console.log("✅ Created new result node:", resultNodeId)
+        } else {
+          throw new Error(result.error)
+        }
+      } catch (error) {
+        console.error("Error generating image:", error)
+        updateNode(id, {
+          isProcessing: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        })
+      }
+    },
+    [id, prompt, updateNode],
+  )
+
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      updateNode(id, { result: null, output: null, generatedImage: null })
+    },
+    [id, updateNode],
+  )
+
+  return (
+    <Card className="w-80 p-4 bg-card border-2 border-border">
+      <div className="flex items-center gap-2 mb-3">
+        <Palette className="w-4 h-4 text-purple-500" />
+        <span className="font-medium text-sm">Generate Image</span>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Generation Prompt</label>
+          <Textarea
+            value={prompt}
+            onChange={(e) => handlePromptChange(e.target.value)}
+            placeholder="Describe the image you want to generate..."
+            className="text-sm resize-none"
+            rows={3}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onFocus={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        {referenceImages.length > 0 && (
+          <div>
+            <div className="text-xs text-muted-foreground mb-2">Reference Images: {referenceImages.length}</div>
+            <div className="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto">
+              {referenceImages.slice(0, 6).map((image, index) => (
+                <img
+                  key={index}
+                  src={image || "/placeholder.svg"}
+                  alt={`Reference ${index + 1}`}
+                  className="w-full h-12 object-cover rounded border"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg?height=48&width=48&text=Error"
+                  }}
+                />
+              ))}
+              {referenceImages.length > 6 && (
+                <div className="w-full h-12 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
+                  +{referenceImages.length - 6}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {data.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">Error: {data.error}</div>}
+
+        {data.isProcessing && (
+          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+            🎨 Generating image... A new result node will appear when complete!
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGenerate}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            disabled={!prompt.trim() || data.isProcessing}
+            size="sm"
+            className="flex-1 bg-purple-600 hover:bg-purple-700"
+            type="button"
+          >
+            {data.isProcessing ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              "Generate"
+            )}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            onMouseDown={(e) => e.stopPropagation()}
+            disabled={!data.result && !data.generatedImage}
+            type="button"
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-purple-500 border-2 border-white" />
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-purple-500 border-2 border-white" />
+    </Card>
+  )
+}
