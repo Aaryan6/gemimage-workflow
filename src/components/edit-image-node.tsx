@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState, useCallback, useEffect } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { useState, useCallback, useEffect, useMemo } from "react"
+import { Handle, Position } from "@xyflow/react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -18,24 +18,34 @@ interface EditImageNodeData {
   error?: string
   generatedImage?: string
   output?: string
+  enhancedPrompt?: string
+  styleAnalysis?: string
 }
 
-export default function EditImageNode({ id, data }: NodeProps<EditImageNodeData>) {
-  const [prompt, setPrompt] = useState(data.prompt || "")
+export default function EditImageNode({ id, data }: { id: string; data: unknown }) {
+  const nodeData = data as EditImageNodeData
+  const [prompt, setPrompt] = useState(nodeData?.prompt || "")
   const [inputImages, setInputImages] = useState<string[]>([])
   const { updateNode, nodes, edges, addNode } = useWorkflowStore()
 
-  useEffect(() => {
-    const connectedInputs = edges
+  // Memoize the connected inputs calculation to prevent unnecessary recalculations
+  const connectedInputs = useMemo(() => {
+    return edges
       .filter((edge) => edge.target === id)
       .map((edge) => {
         const sourceNode = nodes.find((n) => n.id === edge.source)
-        return sourceNode?.data.output
+        return sourceNode?.data?.output as string
       })
       .filter(Boolean) as string[]
+  }, [edges, nodes, id])
 
-    setInputImages(connectedInputs)
-  }, [id, edges, nodes])
+  // Only update input images if the connected inputs actually changed
+  useEffect(() => {
+    const hasChanged = JSON.stringify(connectedInputs) !== JSON.stringify(inputImages)
+    if (hasChanged) {
+      setInputImages(connectedInputs)
+    }
+  }, [connectedInputs, inputImages])
 
   const handlePromptChange = useCallback(
     (value: string) => {
@@ -71,6 +81,8 @@ export default function EditImageNode({ id, data }: NodeProps<EditImageNodeData>
           updateNode(id, {
             isProcessing: false,
             output: result.imageUrl,
+            enhancedPrompt: result.enhancedPrompt,
+            styleAnalysis: result.styleAnalysis
           })
 
           // Find current node position
@@ -92,6 +104,8 @@ export default function EditImageNode({ id, data }: NodeProps<EditImageNodeData>
               imageUrl: result.imageUrl,
               prompt: prompt,
               description: result.description || `Edited: ${prompt}`,
+              enhancedPrompt: result.enhancedPrompt,
+              styleAnalysis: result.styleAnalysis,
               generatedAt: new Date().toLocaleTimeString(),
               output: result.imageUrl // This allows connecting to other nodes
             }
@@ -110,7 +124,7 @@ export default function EditImageNode({ id, data }: NodeProps<EditImageNodeData>
         })
       }
     },
-    [id, prompt, inputImages, updateNode],
+    [id, prompt, inputImages, updateNode, nodes, addNode],
   )
 
   const handleDelete = useCallback(
@@ -170,24 +184,49 @@ export default function EditImageNode({ id, data }: NodeProps<EditImageNodeData>
           <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">Waiting for source images...</div>
         )}
 
-        {data.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">Error: {data.error}</div>}
+        {nodeData?.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">Error: {nodeData.error}</div>}
 
-        {data.isProcessing && (
+        {nodeData?.isProcessing && (
           <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-            ✏️ Editing image... A new result node will appear when complete!
+            <div className="font-medium mb-1">Processing Steps:</div>
+            <div className="space-y-1">
+              <div>🔍 Analyzing reference image styles...</div>
+              <div>🎨 Extracting color palette and composition...</div>
+              <div>✨ Generating enhanced prompt...</div>
+              <div>🖼️ Creating new image with style preservation...</div>
+            </div>
           </div>
         )}
+
+        {/* {nodeData?.enhancedPrompt && !nodeData?.isProcessing && (
+          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+            <div className="font-medium mb-1">Enhanced Prompt:</div>
+            <div className="text-xs bg-white p-2 rounded border max-h-32 overflow-y-auto">
+              <div className="font-medium text-gray-700 mb-1">Original: "{prompt}"</div>
+              <div className="text-gray-600">{nodeData.enhancedPrompt}</div>
+            </div>
+          </div>
+        )} */}
+
+        {/* {nodeData?.styleAnalysis && !nodeData?.isProcessing && (
+          <div className="text-xs text-green-600 bg-green-50 p-2 rounded max-h-32 overflow-y-auto">
+            <div className="font-medium mb-1">Style Analysis:</div>
+            <div className="text-xs bg-white p-2 rounded border">
+              <pre className="whitespace-pre-line text-xs text-gray-700">{nodeData.styleAnalysis}</pre>
+            </div>
+          </div>
+        )} */}
 
         <div className="flex gap-2">
           <Button
             onClick={handleEdit}
             onMouseDown={(e) => e.stopPropagation()}
-            disabled={!prompt.trim() || inputImages.length === 0 || data.isProcessing}
+            disabled={!prompt.trim() || inputImages.length === 0 || nodeData?.isProcessing}
             size="sm"
             className="flex-1 bg-orange-600 hover:bg-orange-700"
             type="button"
           >
-            {data.isProcessing ? (
+            {nodeData?.isProcessing ? (
               <>
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 Editing...
@@ -201,7 +240,7 @@ export default function EditImageNode({ id, data }: NodeProps<EditImageNodeData>
             size="sm"
             onClick={handleDelete}
             onMouseDown={(e) => e.stopPropagation()}
-            disabled={!data.result && !data.generatedImage}
+            disabled={!nodeData?.result && !nodeData?.generatedImage}
             type="button"
           >
             Delete

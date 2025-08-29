@@ -7,7 +7,7 @@ interface WorkflowState {
   isRunning: boolean
   results: string[]
   addNode: (node: Node) => void
-  updateNode: (nodeId: string, data: any) => void
+  updateNode: (nodeId: string, data: Record<string, unknown>) => void
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   setIsRunning: (running: boolean) => void
@@ -44,7 +44,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }),
 
   executeWorkflow: async () => {
-    const { nodes, edges, setIsRunning, updateNode } = get()
+    const { nodes, edges, setIsRunning } = get()
 
     if (nodes.length === 0) {
       console.log("[v0] No nodes to execute")
@@ -158,6 +158,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
                   isProcessing: false,
                   output: result.imageUrl,
                   generatedImage: result.imageUrl,
+                  enhancedPrompt: result.enhancedPrompt,
+                  styleAnalysis: result.styleAnalysis,
                 })
                 addResult(`Edited image: ${node.data.prompt}`)
               } else {

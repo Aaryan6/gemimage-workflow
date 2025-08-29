@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState, useCallback, useEffect } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { useState, useCallback, useEffect, useMemo } from "react"
+import { Handle, Position } from "@xyflow/react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -20,22 +20,30 @@ interface GenerateImageNodeData {
   output?: string
 }
 
-export default function GenerateImageNode({ id, data }: NodeProps<GenerateImageNodeData>) {
-  const [prompt, setPrompt] = useState(data.prompt || "")
+export default function GenerateImageNode({ id, data }: { id: string; data: unknown }) {
+  const nodeData = data as GenerateImageNodeData
+  const [prompt, setPrompt] = useState(nodeData?.prompt || "")
   const [referenceImages, setReferenceImages] = useState<string[]>([])
   const { updateNode, nodes, edges, addNode } = useWorkflowStore()
 
-  useEffect(() => {
-    const connectedInputs = edges
+  // Memoize the connected inputs calculation to prevent unnecessary recalculations
+  const connectedInputs = useMemo(() => {
+    return edges
       .filter((edge) => edge.target === id)
       .map((edge) => {
         const sourceNode = nodes.find((n) => n.id === edge.source)
-        return sourceNode?.data.output
+        return sourceNode?.data?.output as string
       })
       .filter(Boolean) as string[]
+  }, [edges, nodes, id])
 
-    setReferenceImages(connectedInputs)
-  }, [id, edges, nodes])
+  // Only update reference images if the connected inputs actually changed
+  useEffect(() => {
+    const hasChanged = JSON.stringify(connectedInputs) !== JSON.stringify(referenceImages)
+    if (hasChanged) {
+      setReferenceImages(connectedInputs)
+    }
+  }, [connectedInputs, referenceImages])
 
   const handlePromptChange = useCallback(
     (value: string) => {
@@ -116,7 +124,7 @@ export default function GenerateImageNode({ id, data }: NodeProps<GenerateImageN
         })
       }
     },
-    [id, prompt, updateNode],
+    [id, prompt, updateNode, nodes, addNode],
   )
 
   const handleDelete = useCallback(
@@ -174,9 +182,9 @@ export default function GenerateImageNode({ id, data }: NodeProps<GenerateImageN
           </div>
         )}
 
-        {data.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">Error: {data.error}</div>}
+        {nodeData?.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">Error: {nodeData.error}</div>}
 
-        {data.isProcessing && (
+        {nodeData?.isProcessing && (
           <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
             🎨 Generating image... A new result node will appear when complete!
           </div>
@@ -187,12 +195,12 @@ export default function GenerateImageNode({ id, data }: NodeProps<GenerateImageN
             onClick={handleGenerate}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
-            disabled={!prompt.trim() || data.isProcessing}
+            disabled={!prompt.trim() || nodeData?.isProcessing}
             size="sm"
             className="flex-1 bg-purple-600 hover:bg-purple-700"
             type="button"
           >
-            {data.isProcessing ? (
+            {nodeData?.isProcessing ? (
               <>
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 Generating...
@@ -206,7 +214,7 @@ export default function GenerateImageNode({ id, data }: NodeProps<GenerateImageN
             size="sm"
             onClick={handleDelete}
             onMouseDown={(e) => e.stopPropagation()}
-            disabled={!data.result && !data.generatedImage}
+            disabled={!nodeData?.result && !nodeData?.generatedImage}
             type="button"
           >
             Delete

@@ -1,27 +1,29 @@
 "use client"
 
 import type React from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position } from "@xyflow/react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Image as ImageIcon, Download, X } from "lucide-react"
-import { useWorkflowStore } from "@/stores/workflow-store"
+
 
 interface ImageResultNodeData {
   label: string
   imageUrl: string
   prompt: string
   description?: string
+  enhancedPrompt?: string
+  styleAnalysis?: string
   generatedAt: string
   output?: string
 }
 
-export default function ImageResultNode({ id, data }: NodeProps<ImageResultNodeData>) {
-  const { updateNode } = useWorkflowStore()
+export default function ImageResultNode({ id, data }: { id: string; data: unknown }) {
+  const nodeData = data as ImageResultNodeData
 
   const handleDownload = () => {
     const link = document.createElement('a')
-    link.href = data.imageUrl
+    link.href = nodeData.imageUrl
     link.download = `generated-image-${Date.now()}.jpg`
     link.click()
   }
@@ -36,14 +38,14 @@ export default function ImageResultNode({ id, data }: NodeProps<ImageResultNodeD
       <div className="flex items-center gap-2 mb-3">
         <ImageIcon className="w-4 h-4 text-green-500" />
         <span className="font-medium text-sm">Generated Image</span>
-        <span className="text-xs text-muted-foreground ml-auto">{data.generatedAt}</span>
+        <span className="text-xs text-muted-foreground ml-auto">{nodeData.generatedAt}</span>
       </div>
 
       {/* Generated Image Display */}
       <div className="mb-3">
         <div className="w-full h-48 bg-white border-2 border-green-200 rounded overflow-hidden">
           <img
-            src={data.imageUrl}
+            src={nodeData.imageUrl}
             alt="Generated result"
             className="w-full h-full object-contain"
             onLoad={() => console.log("✅ Result image displayed successfully")}
@@ -56,19 +58,39 @@ export default function ImageResultNode({ id, data }: NodeProps<ImageResultNodeD
       <div className="mb-3">
         <div className="text-xs text-muted-foreground mb-1">Prompt:</div>
         <div className="text-xs bg-gray-50 p-2 rounded">
-          "{data.prompt}"
+          &ldquo;{nodeData.prompt}&rdquo;
         </div>
       </div>
 
+      {/* Enhanced Prompt if available */}
+      {/* {nodeData.enhancedPrompt && (
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground mb-1">Enhanced Prompt:</div>
+          <div className="text-xs bg-blue-50 p-2 rounded border border-blue-200">
+            {nodeData.enhancedPrompt}
+          </div>
+        </div>
+      )} */}
+
+      {/* Style Analysis if available */}
+      {/* {nodeData.styleAnalysis && (
+        <div className="mb-3">
+          <div className="text-xs text-muted-foreground mb-1">Style Analysis:</div>
+          <div className="text-xs bg-green-50 p-2 rounded border border-green-200 max-h-20 overflow-y-auto">
+            <pre className="whitespace-pre-line text-xs">{nodeData.styleAnalysis}</pre>
+          </div>
+        </div>
+      )} */}
+
       {/* Description if available */}
-      {data.description && (
+      {/* {nodeData.description && (
         <div className="mb-3">
           <div className="text-xs text-muted-foreground mb-1">Description:</div>
           <div className="text-xs bg-gray-50 p-2 rounded">
-            {data.description}
+            {nodeData.description}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Action Buttons */}
       <div className="flex gap-2">

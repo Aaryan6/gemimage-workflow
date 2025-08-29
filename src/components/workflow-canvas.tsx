@@ -2,17 +2,14 @@
 
 import type React from "react";
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  useNodesState,
-  useEdgesState,
   addEdge,
   type Connection,
-  type Edge,
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -31,31 +28,36 @@ const nodeTypes = {
 };
 
 export default function WorkflowCanvas() {
-  const { nodes: storeNodes, edges: storeEdges, addNode, setNodes: setStoreNodes, setEdges: setStoreEdges } = useWorkflowStore();
-  const [nodes, setNodes, onNodesChange] = useNodesState(storeNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(storeEdges);
+  const { nodes, edges, addNode, setNodes, setEdges } = useWorkflowStore();
 
-  // Sync store changes to ReactFlow state
-  useEffect(() => {
-    setNodes(storeNodes);
-  }, [storeNodes, setNodes]);
+  const onNodesChange = useCallback((changes: unknown[]) => {
+    const updatedNodes = changes.reduce((acc: Node[], change: unknown) => {
+      const typedChange = change as { type: string; id: string; position?: { x: number; y: number } };
+      if (typedChange.type === 'position') {
+        return acc.map((node: Node) => 
+          node.id === typedChange.id 
+            ? { ...node, position: typedChange.position || node.position }
+            : node
+        );
+      }
+      return acc;
+    }, nodes);
+    
+    setNodes(updatedNodes);
+  }, [nodes, setNodes]);
 
-  useEffect(() => {
-    setEdges(storeEdges);
-  }, [storeEdges, setEdges]);
-
-  // Sync ReactFlow changes back to store
-  useEffect(() => {
-    setStoreNodes(nodes);
-  }, [nodes, setStoreNodes]);
-
-  useEffect(() => {
-    setStoreEdges(edges);
-  }, [edges, setStoreEdges]);
+  const onEdgesChange = useCallback(() => {
+    // Handle edge changes if needed
+    // For now, just update the store with current edges
+    setEdges(edges);
+  }, [edges, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      const newEdges = addEdge(params, edges);
+      setEdges(newEdges);
+    },
+    [edges, setEdges]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -110,7 +112,7 @@ export default function WorkflowCanvas() {
       >
         <Controls />
         <MiniMap />
-        <Background variant="dots" gap={12} size={1} />
+        <Background gap={12} size={1} />
       </ReactFlow>
     </div>
   );

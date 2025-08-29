@@ -3,10 +3,10 @@
 import type React from "react"
 
 import { useState, useCallback } from "react"
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, Position } from "@xyflow/react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, X } from "lucide-react"
+import { Upload } from "lucide-react"
 import { useWorkflowStore } from "@/stores/workflow-store"
 
 interface ImageUploadNodeData {
@@ -17,17 +17,18 @@ interface ImageUploadNodeData {
   output?: string
 }
 
-export default function ImageUploadNode({ id, data }: NodeProps<ImageUploadNodeData>) {
+export default function ImageUploadNode({ id, data }: { id: string; data: unknown }) {
+  const nodeData = data as ImageUploadNodeData
   const [isDragOver, setIsDragOver] = useState(false)
   const [localImages, setLocalImages] = useState<string[]>([])
   const { updateNode } = useWorkflowStore()
   
   // Debug what data is actually being passed to the component
   console.log(`🔄 ImageUploadNode render - ID: ${id}`, {
-    dataImages: data.images?.length || 0,
+    dataImages: nodeData.images?.length || 0,
     localImages: localImages.length,
-    hasUploadedImage: !!data.uploadedImage,
-    hasOutput: !!data.output
+    hasUploadedImage: !!nodeData.uploadedImage,
+    hasOutput: !!nodeData.output
   })
 
   const handleFileUpload = useCallback(
@@ -88,29 +89,7 @@ export default function ImageUploadNode({ id, data }: NodeProps<ImageUploadNodeD
     setIsDragOver(false)
   }, [])
 
-  const removeImage = useCallback(
-    (index: number, e?: React.MouseEvent) => {
-      if (e) {
-        e.stopPropagation()
-        e.preventDefault()
-      }
-      const currentImages = data.images || []
-      const newImages = currentImages.filter((_, i) => i !== index)
-      const newOutput = newImages.length > 0 ? newImages[0] : undefined
-      updateNode(id, {
-        images: newImages,
-        uploadedImage: newOutput,
-        output: newOutput,
-        fileName: newImages.length > 0 ? data.fileName : undefined,
-      })
-    },
-    [id, data.images, data.fileName, updateNode],
-  )
-
-  const handleFileInputClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-  }, [])
+  
 
   return (
     <Card className="w-80 p-4 bg-card border-2 border-border">
@@ -161,22 +140,22 @@ export default function ImageUploadNode({ id, data }: NodeProps<ImageUploadNodeD
       <div className="mt-3">
         {/* Debug info */}
         <div className="text-xs bg-blue-50 p-2 rounded mb-2">
-          🔍 Images in data: {data.images?.length || 0}
+          🔍 Images in data: {nodeData.images?.length || 0}
           <br />
           🔍 Local images: {localImages.length}
           <br />
-          🔍 Has uploadedImage: {data.uploadedImage ? 'Yes' : 'No'}
+          🔍 Has uploadedImage: {nodeData.uploadedImage ? 'Yes' : 'No'}
           <br />
-          🔍 Output set: {data.output ? 'Yes' : 'No'}
+          🔍 Output set: {nodeData.output ? 'Yes' : 'No'}
         </div>
         
         {/* Use local state as primary source, fallback to data */}
-        {((data.images && data.images.length > 0) || localImages.length > 0) && (
+        {((nodeData.images && nodeData.images.length > 0) || localImages.length > 0) && (
           <div className="bg-green-50 border-2 border-green-300 p-3 rounded">
             <div className="text-sm font-medium text-green-800 mb-2">✅ Image Uploaded!</div>
             <div className="w-full h-24 bg-white border-2 border-green-200 rounded overflow-hidden">
               <img
-                src={localImages[0] || data.images?.[0]}
+                src={localImages[0] || nodeData.images?.[0]}
                 alt="Uploaded image"
                 className="w-full h-full object-contain"
                 style={{ display: 'block' }}
@@ -191,16 +170,16 @@ export default function ImageUploadNode({ id, data }: NodeProps<ImageUploadNodeD
         )}
 
         {/* Show if no image */}
-        {(!data.images || data.images.length === 0) && localImages.length === 0 && (
+        {(!nodeData.images || nodeData.images.length === 0) && localImages.length === 0 && (
           <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
             No images uploaded yet
           </div>
         )}
       </div>
 
-      {data.output && (
+      {nodeData.output && (
         <div className="mt-2 text-xs text-green-600 bg-green-50 dark:bg-green-950/20 p-2 rounded">
-          ✓ Ready to connect ({data.fileName || "image"})
+          ✓ Ready to connect ({nodeData.fileName || "image"})
         </div>
       )}
 
