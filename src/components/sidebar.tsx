@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { Card } from "@/components/ui/card"
-import { Upload, Edit, Palette } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Upload, Edit, Palette, X } from "lucide-react"
 
 const nodeTypes = [
   {
@@ -26,21 +27,38 @@ const nodeTypes = [
   },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void
+}
+
+export default function Sidebar({ onClose }: SidebarProps = {}) {
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType)
     event.dataTransfer.effectAllowed = "move"
   }
 
   return (
-    <div className="w-64 bg-sidebar border-r border-sidebar-border p-4">
+    <div className="w-64 md:w-64 bg-sidebar border-r border-sidebar-border p-4 h-full overflow-y-auto">
+      {/* Mobile close button */}
+      {onClose && (
+        <div className="flex justify-between items-center mb-4 md:hidden">
+          <h2 className="text-lg font-semibold text-sidebar-foreground">Components</h2>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
+      
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-sidebar-foreground mb-2">Components</h2>
+        {!onClose && (
+          <h2 className="text-lg font-semibold text-sidebar-foreground mb-2">Components</h2>
+        )}
         <div className="text-sm text-sidebar-foreground/70 mb-4">
           <p className="font-medium mb-2">How to use:</p>
           <ol className="space-y-1 text-xs">
             <li>1. Drag components to canvas</li>
-            <li>2. Click output ports (blue circles) then input ports to connect</li>
+            <li className="hidden md:block">2. Click output ports (blue circles) then input ports to connect</li>
+            <li className="md:hidden">2. Tap output ports then input ports to connect</li>
             <li>3. Process nodes to generate/edit images</li>
           </ol>
         </div>
@@ -52,7 +70,7 @@ export default function Sidebar() {
           return (
             <Card
               key={nodeType.type}
-              className="p-3 cursor-grab active:cursor-grabbing hover:bg-sidebar-accent transition-colors"
+              className="p-3 cursor-grab active:cursor-grabbing hover:bg-sidebar-accent transition-colors touch-manipulation"
               draggable
               onDragStart={(event) => onDragStart(event, nodeType.type)}
             >

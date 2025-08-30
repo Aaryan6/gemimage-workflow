@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Palette, Loader2, X } from "lucide-react"
 import { useWorkflowStore } from "@/stores/workflow-store"
+import { getApiKey } from "@/lib/api-utils"
 
 interface GenerateImageNodeData {
   label: string
@@ -66,7 +67,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
       updateNode(id, { isProcessing: true, error: null })
 
       try {
-        const requestBody: { prompt: string; inputImage?: string; inputImages?: string[] } = { prompt: prompt }
+        const requestBody: { prompt: string; inputImage?: string; inputImages?: string[]; apiKey?: string } = { prompt: prompt }
         
         // Add reference images as input if available
         if (referenceImages.length > 0) {
@@ -75,6 +76,12 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
           } else {
             requestBody.inputImages = referenceImages
           }
+        }
+
+        // Get API key from localStorage if available
+        const apiKey = getApiKey()
+        if (apiKey) {
+          requestBody.apiKey = apiKey
         }
         
         const response = await fetch("/api/generate", {
@@ -178,7 +185,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
   )
 
   return (
-    <Card className="w-80 p-4 bg-card border-2 border-border">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border">
       <div className="flex items-center gap-2 mb-3">
         <Palette className="w-4 h-4 text-purple-500" />
         <span className="font-medium text-sm">Generate Image</span>
@@ -191,11 +198,12 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
             value={prompt}
             onChange={(e) => handlePromptChange(e.target.value)}
             placeholder="Describe the image you want to generate..."
-            className="text-sm resize-none"
+            className="text-sm resize-none touch-manipulation"
             rows={3}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onFocus={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
           />
         </div>
 
@@ -208,7 +216,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
                 size="sm"
                 onClick={handleRemoveReferenceImages}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 touch-manipulation"
                 type="button"
               >
                 Remove All
@@ -230,7 +238,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
                     size="sm"
                     onClick={handleRemoveIndividualImage(index)}
                     onMouseDown={(e) => e.stopPropagation()}
-                    className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 right-1 h-6 w-6 md:h-5 md:w-5 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-manipulation"
                     type="button"
                   >
                     <X className="h-3 w-3" />
@@ -261,13 +269,14 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!prompt.trim() || nodeData?.isProcessing}
             size="sm"
-            className="flex-1 bg-purple-600 hover:bg-purple-700"
+            className="flex-1 bg-purple-600 hover:bg-purple-700 touch-manipulation"
             type="button"
           >
             {nodeData?.isProcessing ? (
               <>
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Generating...
+                <span className="hidden sm:inline">Generating...</span>
+                <span className="sm:hidden">Gen...</span>
               </>
             ) : (
               "Generate"
@@ -279,6 +288,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
             onClick={handleDelete}
             onMouseDown={(e) => e.stopPropagation()}
             disabled={nodeData?.isProcessing}
+            className="touch-manipulation"
             type="button"
           >
             Clear

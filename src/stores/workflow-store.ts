@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import type { Node, Edge } from "@xyflow/react"
+import { getApiKey } from "@/lib/api-utils"
 
 interface WorkflowState {
   nodes: Node[]
@@ -157,13 +158,21 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
               .filter(Boolean)
 
             if (inputImages.length > 0) {
+              const requestBody: { images: string[]; prompt: string; apiKey?: string } = {
+                images: inputImages,
+                prompt: node.data.prompt,
+              }
+
+              // Get API key from localStorage if available
+              const apiKey = getApiKey()
+              if (apiKey) {
+                requestBody.apiKey = apiKey
+              }
+
               const response = await fetch("/api/edit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  images: inputImages,
-                  prompt: node.data.prompt,
-                }),
+                body: JSON.stringify(requestBody),
               })
 
               const result = await response.json()
@@ -186,10 +195,20 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
         case "generateImage":
           if (node.data.prompt) {
+            const requestBody: { prompt: string; apiKey?: string } = {
+              prompt: node.data.prompt,
+            }
+
+            // Get API key from localStorage if available
+            const apiKey = getApiKey()
+            if (apiKey) {
+              requestBody.apiKey = apiKey
+            }
+
             const response = await fetch("/api/generate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ prompt: node.data.prompt }),
+              body: JSON.stringify(requestBody),
             })
 
             const result = await response.json()

@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit, Loader2 } from "lucide-react";
-import { useWorkflowStore } from "@/stores/workflow-store";
+import { useWorkflowStore } from "@/stores/workflow-store"
+import { getApiKey } from "@/lib/api-utils";
 
 interface EditImageNodeData {
   label: string;
@@ -72,13 +73,21 @@ export default function EditImageNode({
       updateNode(id, { isProcessing: true, error: null });
 
       try {
+        const requestBody: { images: string[]; prompt: string; apiKey?: string } = {
+          images: inputImages,
+          prompt: prompt,
+        }
+
+        // Get API key from localStorage if available
+        const apiKey = getApiKey()
+        if (apiKey) {
+          requestBody.apiKey = apiKey
+        }
+
         const response = await fetch("/api/edit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            images: inputImages,
-            prompt: prompt,
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         const result = await response.json();
@@ -142,8 +151,8 @@ export default function EditImageNode({
   );
 
   return (
-    <Card className="w-80 p-4 bg-card border-2 border-border">
-      <div className="flex items-center gap-2">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border">
+      <div className="flex items-center gap-2 mb-3">
         <Edit className="w-4 h-4 text-orange-500" />
         <span className="font-medium text-sm">Edit Image</span>
       </div>
@@ -157,11 +166,12 @@ export default function EditImageNode({
             value={prompt}
             onChange={(e) => handlePromptChange(e.target.value)}
             placeholder="Enter editing prompt..."
-            className="text-sm resize-none"
+            className="text-sm resize-none touch-manipulation"
             rows={3}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onFocus={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
           />
         </div>
 
@@ -209,13 +219,14 @@ export default function EditImageNode({
               nodeData?.isProcessing
             }
             size="sm"
-            className="flex-1 bg-orange-600 hover:bg-orange-700"
+            className="flex-1 bg-orange-600 hover:bg-orange-700 touch-manipulation"
             type="button"
           >
             {nodeData?.isProcessing ? (
               <>
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Editing...
+                <span className="hidden sm:inline">Editing...</span>
+                <span className="sm:hidden">Edit...</span>
               </>
             ) : (
               "Edit"
@@ -227,6 +238,7 @@ export default function EditImageNode({
             onClick={handleDelete}
             onMouseDown={(e) => e.stopPropagation()}
             disabled={!nodeData?.result && !nodeData?.generatedImage}
+            className="touch-manipulation"
             type="button"
           >
             Delete

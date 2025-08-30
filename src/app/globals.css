@@ -119,4 +119,53 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Mobile-specific touch optimizations */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* ReactFlow mobile styles */
+  .react-flow__handle {
+    @apply md:w-3 md:h-3 w-4 h-4;
+  }
+  
+  .react-flow__controls {
+    @apply md:bottom-4 md:right-4 bottom-2 right-2;
+  }
+  
+  .react-flow__controls-button {
+    @apply md:w-8 md:h-8 w-10 h-10 touch-manipulation;
+  }
+  
+  /* Better mobile zoom controls */
+  @media (max-width: 768px) {
+    .react-flow__controls {
+      transform: scale(0.9);
+    }
+    
+    .react-flow__minimap {
+      display: none;
+    }
+    
+    /* Improve node dragging on mobile */
+    .react-flow__node {
+      cursor: grab;
+    }
+    
+    .react-flow__node:active {
+      cursor: grabbing;
+    }
+  }
+  
+  /* Improve scrolling on mobile */
+  @media (hover: none) and (pointer: coarse) {
+    .react-flow__pane {
+      cursor: grab;
+    }
+    
+    .react-flow__pane:active {
+      cursor: grabbing;
+    }
+  }
 }

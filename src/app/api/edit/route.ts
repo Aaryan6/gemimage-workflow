@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenAI } from "@google/genai"
 
-const ai = new GoogleGenAI({})
-
 function base64ToGenerativePart(imageData: string, mimeType: string) {
   return {
     inlineData: {
@@ -14,7 +12,7 @@ function base64ToGenerativePart(imageData: string, mimeType: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { images, prompt } = await request.json()
+    const { images, prompt, apiKey } = await request.json()
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json({ error: "At least one image is required" }, { status: 400 })
@@ -24,9 +22,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Edit prompt is required" }, { status: 400 })
     }
 
-    if (!process.env.GOOGLE_API_KEY) {
-      return NextResponse.json({ error: "Google API key not configured" }, { status: 500 })
+    // Use API key from request body if provided, otherwise fall back to environment variable
+    const googleApiKey = apiKey || process.env.GOOGLE_API_KEY
+    
+    if (!googleApiKey) {
+      return NextResponse.json({ error: "Google API key not configured. Please provide an API key in settings or set GOOGLE_API_KEY environment variable." }, { status: 500 })
     }
+
+    const ai = new GoogleGenAI({ apiKey: googleApiKey })
 
     // Analyze ALL uploaded images to extract style and content information
     const allStyleAnalyses = []

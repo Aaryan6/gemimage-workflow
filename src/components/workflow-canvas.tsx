@@ -74,9 +74,12 @@ export default function WorkflowCanvas() {
         return;
       }
 
+      // Responsive positioning - adjust based on screen size
+      const sidebarWidth = window.innerWidth >= 768 ? 250 : 0; // Only desktop has visible sidebar
+      const headerHeight = 100;
       const position = {
-        x: event.clientX - 250, // Adjust for sidebar width
-        y: event.clientY - 100, // Adjust for header height
+        x: event.clientX - sidebarWidth,
+        y: event.clientY - headerHeight,
       };
 
       const newNode: Node = {
@@ -109,9 +112,31 @@ export default function WorkflowCanvas() {
         nodeTypes={nodeTypes}
         fitView
         className="bg-muted/20"
+        // Better mobile interaction
+        panOnScroll
+        panOnScrollSpeed={0.5}
+        zoomOnScroll={false}
+        zoomOnPinch
+        panOnDrag
+        // Handle connections better on mobile
+        snapToGrid
+        snapGrid={[15, 15]}
       >
-        <Controls />
-        <MiniMap />
+        <Controls 
+          className="react-flow__controls"
+          showZoom={true}
+          showFitView={true}
+          showInteractive={false}
+          position="bottom-right"
+        />
+        {/* Only show MiniMap on larger screens */}
+        <div className="hidden lg:block">
+          <MiniMap 
+            className="react-flow__minimap"
+            zoomable
+            pannable
+          />
+        </div>
         <Background gap={12} size={1} />
       </ReactFlow>
     </div>

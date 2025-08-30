@@ -79,8 +79,8 @@ export default function ImageUploadNode({
   }, []);
 
   return (
-    <Card className="w-80 p-4 bg-card border-2 border-border">
-      <div className="flex items-center gap-2">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border">
+      <div className="flex items-center gap-2 mb-3">
         <Upload className="w-4 h-4 text-blue-500" />
         <span className="font-medium text-sm">Image Upload</span>
       </div>
@@ -103,13 +103,14 @@ export default function ImageUploadNode({
           id={`file-input-${id}`}
         />
         <div>
-          <div className="text-sm text-muted-foreground mb-2">
-            Drop image here or click to browse
+          <div className="text-xs md:text-sm text-muted-foreground mb-2">
+            Drop image here or tap to browse
           </div>
           <Button
             variant="outline"
             size="sm"
             type="button"
+            className="touch-manipulation"
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
@@ -156,7 +157,7 @@ export default function ImageUploadNode({
                   output: undefined,
                 });
               }}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors"
+              className="absolute -top-2 -right-2 w-7 h-7 md:w-6 md:h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation"
               type="button"
             >
               <X className="w-3 h-3" />

@@ -1,19 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenAI } from "@google/genai"
 
-const ai = new GoogleGenAI({})
-
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, inputImage, inputImages } = await request.json()
+    const { prompt, inputImage, inputImages, apiKey } = await request.json()
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
     }
 
-    if (!process.env.GOOGLE_API_KEY) {
-      return NextResponse.json({ error: "Google API key not configured" }, { status: 500 })
+    // Use API key from request body if provided, otherwise fall back to environment variable
+    const googleApiKey = apiKey || process.env.GOOGLE_API_KEY
+    
+    if (!googleApiKey) {
+      return NextResponse.json({ error: "Google API key not configured. Please provide an API key in settings or set GOOGLE_API_KEY environment variable." }, { status: 500 })
     }
+
+    const ai = new GoogleGenAI({ apiKey: googleApiKey })
 
 
     // Prepare content array for the model

@@ -37,8 +37,8 @@ export default function ImageResultNode({
   };
 
   return (
-    <Card className="w-80 p-4 bg-card border-2 border-green-500">
-      <div className="flex items-center gap-2">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-green-500">
+      <div className="flex items-center gap-2 mb-3">
         <ImageIcon className="w-4 h-4 text-green-500" />
         <span className="font-medium text-sm">Generated Image</span>
         <span className="text-xs text-muted-foreground ml-auto">
@@ -71,16 +71,18 @@ export default function ImageResultNode({
         <Button
           onClick={handleDownload}
           size="sm"
-          className="flex-1 bg-green-600 hover:bg-green-700"
+          className="flex-1 bg-green-600 hover:bg-green-700 touch-manipulation"
           type="button"
         >
           <Download className="w-3 h-3 mr-1" />
-          Download
+          <span className="hidden sm:inline">Download</span>
+          <span className="sm:hidden">Save</span>
         </Button>
         <Button
           variant="destructive"
           size="sm"
           onClick={handleDelete}
+          className="touch-manipulation"
           type="button"
         >
           <X className="w-3 h-3" />
