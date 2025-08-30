@@ -153,14 +153,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
               .filter((edge) => edge.target === nodeId)
               .map((edge) => {
                 const sourceNode = nodes.find((n) => n.id === edge.source)
-                return sourceNode?.data.output
+                return sourceNode?.data.output as string
               })
-              .filter(Boolean)
+              .filter((output): output is string => Boolean(output))
 
             if (inputImages.length > 0) {
               const requestBody: { images: string[]; prompt: string; apiKey?: string } = {
                 images: inputImages,
-                prompt: node.data.prompt,
+                prompt: node.data.prompt as string,
               }
 
               // Get API key from localStorage if available
@@ -196,7 +196,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         case "generateImage":
           if (node.data.prompt) {
             const requestBody: { prompt: string; apiKey?: string } = {
-              prompt: node.data.prompt,
+              prompt: node.data.prompt as string,
             }
 
             // Get API key from localStorage if available
