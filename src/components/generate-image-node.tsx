@@ -7,7 +7,7 @@ import { Handle, Position } from "@xyflow/react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Palette, Loader2 } from "lucide-react"
+import { Palette, Loader2, X } from "lucide-react"
 import { useWorkflowStore } from "@/stores/workflow-store"
 
 interface GenerateImageNodeData {
@@ -24,7 +24,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
   const nodeData = data as GenerateImageNodeData
   const [prompt, setPrompt] = useState(nodeData?.prompt || "")
   const [referenceImages, setReferenceImages] = useState<string[]>([])
-  const { updateNode, nodes, edges, addNode } = useWorkflowStore()
+  const { updateNode, nodes, edges, addNode, removeEdgesToNode, removeEdge } = useWorkflowStore()
 
   // Memoize the connected inputs calculation to prevent unnecessary recalculations
   const connectedInputs = useMemo(() => {
@@ -58,28 +58,34 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
       e.stopPropagation()
       e.preventDefault()
       
-      console.log("🎨 Generate button clicked, prompt:", prompt)
 
       if (!prompt.trim()) {
-        console.log("❌ No prompt provided")
         return
       }
 
-      console.log("🔄 Starting generation...")
       updateNode(id, { isProcessing: true, error: null })
 
       try {
+        const requestBody: { prompt: string; inputImage?: string; inputImages?: string[] } = { prompt: prompt }
+        
+        // Add reference images as input if available
+        if (referenceImages.length > 0) {
+          if (referenceImages.length === 1) {
+            requestBody.inputImage = referenceImages[0]
+          } else {
+            requestBody.inputImages = referenceImages
+          }
+        }
+        
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: prompt }),
+          body: JSON.stringify(requestBody),
         })
 
         const result = await response.json()
-        console.log("Generate API response:", result)
 
         if (result.success) {
-          console.log("Generated image URL preview:", result.imageUrl?.substring(0, 50))
           
           // Clear the processing state
           updateNode(id, {
@@ -112,12 +118,10 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
           }
 
           addNode(newResultNode)
-          console.log("✅ Created new result node:", resultNodeId)
         } else {
           throw new Error(result.error)
         }
       } catch (error) {
-        console.error("Error generating image:", error)
         updateNode(id, {
           isProcessing: false,
           error: error instanceof Error ? error.message : "Unknown error",
@@ -131,9 +135,46 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
     (e: React.MouseEvent) => {
       e.stopPropagation()
       e.preventDefault()
-      updateNode(id, { result: null, output: null, generatedImage: null })
+      updateNode(id, { 
+        result: null, 
+        output: null, 
+        generatedImage: null, 
+        error: null,
+        isProcessing: false,
+        prompt: ""
+      })
+      setPrompt("")
+      setReferenceImages([])
     },
     [id, updateNode],
+  )
+
+  const handleRemoveReferenceImages = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      // Remove all incoming edges to this node
+      removeEdgesToNode(id)
+      // Clear local reference images state
+      setReferenceImages([])
+    },
+    [id, removeEdgesToNode],
+  )
+
+  const handleRemoveIndividualImage = useCallback(
+    (imageIndex: number) => (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      
+      // Find the edge corresponding to this image index
+      const targetEdges = edges.filter((edge) => edge.target === id)
+      if (targetEdges[imageIndex]) {
+        const edgeToRemove = targetEdges[imageIndex]
+        // Remove the specific edge
+        removeEdge(edgeToRemove.id)
+      }
+    },
+    [id, edges, removeEdge],
   )
 
   return (
@@ -160,33 +201,56 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
 
         {referenceImages.length > 0 && (
           <div>
-            <div className="text-xs text-muted-foreground mb-2">Reference Images: {referenceImages.length}</div>
-            <div className="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto">
-              {referenceImages.slice(0, 6).map((image, index) => (
-                <img
-                  key={index}
-                  src={image || "/placeholder.svg"}
-                  alt={`Reference ${index + 1}`}
-                  className="w-full h-12 object-cover rounded border"
-                  onError={(e) => {
-                    e.currentTarget.src = "/placeholder.svg?height=48&width=48&text=Error"
-                  }}
-                />
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-muted-foreground">{referenceImages.length} reference image{referenceImages.length > 1 ? 's' : ''}</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRemoveReferenceImages}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                type="button"
+              >
+                Remove All
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+              {referenceImages.slice(0, 4).map((image, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={image || "/placeholder.svg"}
+                    alt={`Reference ${index + 1}`}
+                    className="w-full h-20 object-cover rounded border"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.svg?height=80&width=80&text=Error"
+                    }}
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleRemoveIndividualImage(index)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    type="button"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               ))}
-              {referenceImages.length > 6 && (
-                <div className="w-full h-12 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
-                  +{referenceImages.length - 6}
+              {referenceImages.length > 4 && (
+                <div className="w-full h-20 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
+                  +{referenceImages.length - 4} more
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {nodeData?.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">Error: {nodeData.error}</div>}
+        {nodeData?.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">{nodeData.error}</div>}
 
         {nodeData?.isProcessing && (
           <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-            🎨 Generating image... A new result node will appear when complete!
+            Generating...
           </div>
         )}
 
@@ -210,14 +274,14 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
             )}
           </Button>
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
             onClick={handleDelete}
             onMouseDown={(e) => e.stopPropagation()}
-            disabled={!nodeData?.result && !nodeData?.generatedImage}
+            disabled={nodeData?.isProcessing}
             type="button"
           >
-            Delete
+            Clear
           </Button>
         </div>
       </div>

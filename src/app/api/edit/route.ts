@@ -75,11 +75,9 @@ Be very specific and descriptive. Include exact colors, textures, and visual ele
           allStyleAnalyses.push(analysisText)
           allContentDescriptions.push(analysisText)
           
-          console.log(`Style analysis result for image ${i + 1}:`, analysisText)
           
           // Validate that we got a proper analysis
           if (!analysisText.includes('STYLE:') || !analysisText.includes('CONTENT:')) {
-            console.warn(`Style analysis may be incomplete for image ${i + 1}:`, analysisText)
           }
         }
       }
@@ -106,8 +104,7 @@ Be very specific and descriptive. Include exact colors, textures, and visual ele
         combinedContentDescription = contentParts.join('\n\n')
       }
       
-    } catch (analysisError) {
-      console.warn("Style analysis failed, proceeding with basic generation:", analysisError)
+    } catch {
       combinedStyleAnalysis = "STYLE: Unable to analyze style automatically\nCONTENT: Reference images provided for style guidance\nTECHNICAL: Standard image format"
       combinedContentDescription = "CONTENT: Reference images provided for content guidance"
     }
@@ -117,7 +114,6 @@ Be very specific and descriptive. Include exact colors, textures, and visual ele
     
     // Validate style analysis
     if (!combinedStyleAnalysis || (!combinedStyleAnalysis.includes('STYLE:') && !combinedStyleAnalysis.includes('CONTENT:'))) {
-      console.warn("Style analysis validation failed, using fallback")
       combinedStyleAnalysis = "STYLE: Reference image style to be preserved\nCONTENT: Visual elements from reference images\nTECHNICAL: Standard image format"
     }
     
@@ -156,25 +152,60 @@ Important Instructions:
 - Focus on what the user specifically requested: "${prompt}"`
     }
     
-    console.log("Enhanced prompt constructed:", enhancedPrompt)
-    console.log("User's original request:", prompt)
-    console.log("Number of images analyzed:", images.length)
 
-    // Generate a new image based on the enhanced prompt
+    // Generate a new image based on the enhanced prompt using gemini-2.5-flash-image-preview
     try {
-      const editResponse = await ai.models.generateImages({
-        model: 'imagen-3.0-generate-002',
-        prompt: enhancedPrompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '1:1'
+      // Prepare content for the new model
+      const contentParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: enhancedPrompt }]
+      
+      // Supported MIME types for Gemini models
+      const supportedMimeTypes = [
+        'image/png',
+        'image/jpeg', 
+        'image/jpg',
+        'image/webp',
+        'image/heic',
+        'image/heif'
+      ]
+
+      // Add all reference images for multi-image generation
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i]
+        if (image && image.startsWith('data:')) {
+          const [header, base64Data] = image.split(',')
+          const mimeType = header.split(':')[1].split(';')[0]
+          
+          // Check if MIME type is supported
+          if (!supportedMimeTypes.includes(mimeType)) {
+            continue
+          }
+          
+          contentParts.push({
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
+            }
+          })
         }
+      }
+
+
+      const editResponse = await ai.models.generateContent({
+        model: "gemini-2.5-flash-image-preview",
+        contents: contentParts
       })
 
-      const generatedImages = editResponse.generatedImages
-      if (generatedImages && generatedImages.length > 0 && generatedImages[0].image?.imageBytes) {
-        const editedImageUrl = `data:image/jpeg;base64,${generatedImages[0].image.imageBytes}`
+      // Extract image from response
+      let imageData = null
+      for (const part of editResponse.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          imageData = part.inlineData.data
+          break
+        }
+      }
+
+      if (imageData) {
+        const editedImageUrl = `data:image/png;base64,${imageData}`
         
         return NextResponse.json({
           success: true,
@@ -185,18 +216,16 @@ Important Instructions:
           styleAnalysis: combinedStyleAnalysis,
           contentDescription: combinedContentDescription,
           numberOfImagesAnalyzed: images.length,
-          description: generatedImages[0].enhancedPrompt || enhancedPrompt
+          description: enhancedPrompt
         })
       } else {
         throw new Error("No image data received from generation")
       }
     } catch (imageGenError) {
-      console.error("Image generation failed:", imageGenError)
       throw new Error(`Image generation failed: ${imageGenError instanceof Error ? imageGenError.message : 'Unknown error'}`)
     }
 
   } catch (error) {
-    console.error("Edit API error:", error)
     return NextResponse.json({ 
       error: "Failed to edit image", 
       details: error instanceof Error ? error.message : "Unknown error"

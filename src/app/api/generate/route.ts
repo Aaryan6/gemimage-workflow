@@ -5,7 +5,7 @@ const ai = new GoogleGenAI({})
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt } = await request.json()
+    const { prompt, inputImage, inputImages } = await request.json()
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
@@ -15,40 +15,98 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Google API key not configured" }, { status: 500 })
     }
 
-    const response = await ai.models.generateImages({
-      model: 'imagen-3.0-generate-002',
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: 'image/jpeg',
-        aspectRatio: '1:1'
+
+    // Prepare content array for the model
+    const contentParts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [{ text: prompt }]
+
+    // Handle multiple images (inputImages array) or single image (inputImage)
+    const imagesToProcess = inputImages || (inputImage ? [inputImage] : [])
+    
+    // Supported MIME types for Gemini models
+    const supportedMimeTypes = [
+      'image/png',
+      'image/jpeg', 
+      'image/jpg',
+      'image/webp',
+      'image/heic',
+      'image/heif'
+    ]
+    
+    if (imagesToProcess.length > 0) {
+      
+      for (let i = 0; i < imagesToProcess.length; i++) {
+        const image = imagesToProcess[i]
+        if (image && image.startsWith('data:')) {
+          try {
+            const [header, base64Data] = image.split(',')
+            const mimeType = header.split(':')[1].split(';')[0]
+            
+            // Check if MIME type is supported
+            if (!supportedMimeTypes.includes(mimeType)) {
+              continue
+            }
+            
+            contentParts.push({
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data
+              }
+            })
+          } catch {
+          }
+        }
       }
+    }
+
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-image-preview",
+      contents: contentParts
     })
 
-    const generatedImages = response.generatedImages
-    if (!generatedImages || generatedImages.length === 0) {
-      return NextResponse.json({ error: "No image generated" }, { status: 500 })
+
+    // Extract image from response
+    let imageData = null
+    if (response.candidates && response.candidates.length > 0) {
+      const candidate = response.candidates[0]
+      if (candidate.content && candidate.content.parts) {
+        for (const part of candidate.content.parts) {
+          if (part.inlineData && part.inlineData.data) {
+            imageData = part.inlineData.data
+            break
+          }
+        }
+      }
     }
 
-    const firstImage = generatedImages[0]
-    if (!firstImage.image?.imageBytes) {
-      return NextResponse.json({ error: "No image data received" }, { status: 500 })
+    if (!imageData) {
+      return NextResponse.json({ 
+        error: "No image generated", 
+        debug: {
+          hasCandidates: !!response.candidates,
+          candidateCount: response.candidates?.length || 0,
+          firstCandidateContent: response.candidates?.[0]?.content
+        }
+      }, { status: 500 })
     }
 
-    // Convert base64 to data URL
-    const imageUrl = `data:image/jpeg;base64,${firstImage.image.imageBytes}`
+    // Convert to data URL
+    const imageUrl = `data:image/png;base64,${imageData}`
+
 
     return NextResponse.json({
       success: true,
       imageUrl: imageUrl,
       prompt: prompt,
-      description: firstImage.enhancedPrompt || prompt
+      description: prompt,
+      hasInputImage: imagesToProcess.length > 0,
+      inputImageCount: imagesToProcess.length
     })
   } catch (error) {
-    console.error("Generate API error:", error)
     return NextResponse.json({ 
       error: "Failed to generate image", 
-      details: error instanceof Error ? error.message : "Unknown error"
+      details: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 })
   }
 }

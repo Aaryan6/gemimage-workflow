@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
       mimeType: file.type
     })
   } catch (error) {
-    console.error("Upload API error:", error)
     return NextResponse.json({ 
       error: "Failed to upload image", 
       details: error instanceof Error ? error.message : "Unknown error"

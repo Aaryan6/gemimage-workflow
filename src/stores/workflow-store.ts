@@ -8,6 +8,9 @@ interface WorkflowState {
   results: string[]
   addNode: (node: Node) => void
   updateNode: (nodeId: string, data: Record<string, unknown>) => void
+  removeNode: (nodeId: string) => void
+  removeEdge: (edgeId: string) => void
+  removeEdgesToNode: (nodeId: string) => void
   setNodes: (nodes: Node[]) => void
   setEdges: (edges: Edge[]) => void
   setIsRunning: (running: boolean) => void
@@ -30,6 +33,22 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       nodes: state.nodes.map((node) => (node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node)),
     })),
 
+  removeNode: (nodeId) =>
+    set((state) => ({
+      nodes: state.nodes.filter((node) => node.id !== nodeId),
+      edges: state.edges.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+    })),
+
+  removeEdge: (edgeId) =>
+    set((state) => ({
+      edges: state.edges.filter((edge) => edge.id !== edgeId),
+    })),
+
+  removeEdgesToNode: (nodeId) =>
+    set((state) => ({
+      edges: state.edges.filter((edge) => edge.target !== nodeId),
+    })),
+
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
   setIsRunning: (running) => set({ isRunning: running }),
@@ -47,7 +66,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const { nodes, edges, setIsRunning } = get()
 
     if (nodes.length === 0) {
-      console.log("[v0] No nodes to execute")
       return
     }
 
@@ -58,7 +76,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       const startNodes = nodes.filter((node) => !edges.some((edge) => edge.target === node.id))
 
       if (startNodes.length === 0) {
-        console.log("[v0] No start nodes found")
         setIsRunning(false)
         return
       }
@@ -99,8 +116,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       for (const startNode of startNodes) {
         await executeNodeRecursively(startNode.id)
       }
-    } catch (error) {
-      console.error("[v0] Workflow execution error:", error)
+    } catch {
     } finally {
       setIsRunning(false)
     }
@@ -112,7 +128,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     if (!node) return
 
-    console.log(`[v0] Executing node: ${node.data.label}`)
 
     // Set node to processing state
     updateNode(nodeId, { isProcessing: true, error: null })
@@ -193,7 +208,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
           break
       }
     } catch (error) {
-      console.error(`[v0] Node execution error for ${nodeId}:`, error)
       updateNode(nodeId, {
         isProcessing: false,
         error: error instanceof Error ? error.message : "Unknown error",
