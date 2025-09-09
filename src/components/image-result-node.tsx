@@ -46,19 +46,19 @@ export default function ImageResultNode({
   );
 
   return (
-    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-green-500 relative">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-accent relative">
       <Button
         variant="ghost"
         size="sm"
         onClick={handleDelete}
         onMouseDown={(e) => e.stopPropagation()}
-        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-background shadow-sm z-10"
         type="button"
       >
         <X className="w-3 h-3" />
       </Button>
       <div className="flex items-center gap-2 mb-3">
-        <ImageIcon className="w-4 h-4 text-green-500" />
+        <ImageIcon className="w-4 h-4 text-accent" />
         <span className="font-medium text-sm">Generated Image</span>
         <span className="text-xs text-muted-foreground ml-auto">
           {nodeData.generatedAt}
@@ -67,7 +67,7 @@ export default function ImageResultNode({
 
       {/* Generated Image Display */}
       <div className="mb-3">
-        <div className="w-full h-56 bg-white border-2 border-green-200 rounded overflow-hidden">
+        <div className="w-full h-56 bg-background border-2 border-accent/20 rounded overflow-hidden">
           <img
             src={nodeData.imageUrl}
             alt="Generated result"
@@ -81,7 +81,7 @@ export default function ImageResultNode({
       {/* Prompt Info */}
       <div className="">
         <div className="text-xs text-muted-foreground mb-1">Prompt:</div>
-        <div className="text-xs bg-gray-50 p-2 rounded">
+        <div className="text-xs bg-muted p-2 rounded">
           &ldquo;{nodeData.prompt}&rdquo;
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function ImageResultNode({
       <Button
         onClick={handleDownload}
         size="sm"
-        className="w-full bg-green-600 hover:bg-green-700 touch-manipulation"
+        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground touch-manipulation"
         type="button"
       >
         <Download className="w-3 h-3 mr-1" />
@@ -101,7 +101,7 @@ export default function ImageResultNode({
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 bg-green-500 border-2 border-white"
+        className="w-3 h-3 bg-accent border-2 border-background"
       />
     </Card>
   );

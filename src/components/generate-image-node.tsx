@@ -200,13 +200,13 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
         size="sm"
         onClick={handleDeleteNode}
         onMouseDown={(e) => e.stopPropagation()}
-        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-background shadow-sm z-10"
         type="button"
       >
         <X className="w-3 h-3" />
       </Button>
       <div className="flex items-center gap-2 mb-3">
-        <Palette className="w-4 h-4 text-purple-500" />
+        <Palette className="w-4 h-4 text-accent" />
         <span className="font-medium text-sm">Generate Image</span>
       </div>
 
@@ -235,7 +235,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
                 size="sm"
                 onClick={handleRemoveReferenceImages}
                 onMouseDown={(e) => e.stopPropagation()}
-                className="h-6 px-2 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 touch-manipulation"
+                className="h-6 px-2 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10 touch-manipulation"
                 type="button"
               >
                 Remove All
@@ -273,10 +273,10 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
           </div>
         )}
 
-        {nodeData?.error && <div className="text-xs text-red-500 bg-red-50 p-2 rounded">{nodeData.error}</div>}
+        {nodeData?.error && <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">{nodeData.error}</div>}
 
         {nodeData?.isProcessing && (
-          <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+          <div className="text-xs text-primary bg-primary/10 p-2 rounded">
             Generating...
           </div>
         )}
@@ -288,7 +288,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
             onPointerDown={(e) => e.stopPropagation()}
             disabled={!prompt.trim() || nodeData?.isProcessing}
             size="sm"
-            className="flex-1 bg-purple-600 hover:bg-purple-700 touch-manipulation"
+            className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground touch-manipulation"
             type="button"
           >
             {nodeData?.isProcessing ? (
@@ -315,8 +315,8 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
         </div>
       </div>
 
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-purple-500 border-2 border-white" />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-purple-500 border-2 border-white" />
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-accent border-2 border-background" />
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-accent border-2 border-background" />
     </Card>
   )
 }

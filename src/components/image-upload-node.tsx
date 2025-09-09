@@ -94,20 +94,20 @@ export default function ImageUploadNode({
         size="sm"
         onClick={handleDeleteNode}
         onMouseDown={(e) => e.stopPropagation()}
-        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-background shadow-sm z-10"
         type="button"
       >
         <X className="w-3 h-3" />
       </Button>
       <div className="flex items-center gap-2 mb-3">
-        <Upload className="w-4 h-4 text-blue-500" />
+        <Upload className="w-4 h-4 text-primary" />
         <span className="font-medium text-sm">Image Upload</span>
       </div>
 
       <div
         className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
           isDragOver
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
+            ? "border-primary bg-primary/10"
             : "border-muted-foreground/25"
         }`}
         onDrop={handleDrop}
@@ -152,7 +152,7 @@ export default function ImageUploadNode({
         {((nodeData.images && nodeData.images.length > 0) ||
           localImages.length > 0) && (
           <div className="relative">
-            <div className="w-full aspect-video bg-white border-2 border-green-200 rounded overflow-hidden">
+            <div className="w-full aspect-video bg-background border-2 border-accent/20 rounded overflow-hidden">
               <img
                 src={localImages[0] || nodeData.images?.[0]}
                 alt="Uploaded image"
@@ -176,7 +176,7 @@ export default function ImageUploadNode({
                   output: undefined,
                 });
               }}
-              className="absolute -top-2 -right-2 w-7 h-7 md:w-6 md:h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation"
+              className="absolute -top-2 -right-2 w-7 h-7 md:w-6 md:h-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-full flex items-center justify-center transition-colors touch-manipulation"
               type="button"
             >
               <X className="w-3 h-3" />
@@ -186,7 +186,7 @@ export default function ImageUploadNode({
 
         {(!nodeData.images || nodeData.images.length === 0) &&
           localImages.length === 0 && (
-            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
               No image uploaded yet
             </div>
           )}
@@ -195,7 +195,7 @@ export default function ImageUploadNode({
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 bg-blue-500 border-2 border-white"
+        className="w-3 h-3 bg-primary border-2 border-background"
       />
     </Card>
   );

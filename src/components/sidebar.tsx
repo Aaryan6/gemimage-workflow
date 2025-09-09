@@ -98,16 +98,16 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       {/* Instructions */}
       <div className="mb-6">
         {!hasApiKey && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 mb-4">
             <div className="flex items-start gap-2">
-              <Key className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+              <Key className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
               <div className="text-sm">
-                <p className="text-orange-700 text-xs leading-relaxed">
+                <p className="text-destructive text-xs leading-relaxed">
                   <a
                     href="https://aistudio.google.com/apikey"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-orange-800 hover:text-orange-900 font-medium underline"
+                    className="text-destructive hover:text-destructive/80 font-medium underline"
                   >
                     Get your Gemini API key
                   </a>{" "}
@@ -164,14 +164,14 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       </div>
 
       {/* Bottom CTA */}
-      <div className="mt-4 p-4 bg-blue-100 border-2 border-blue-200 rounded-lg shadow-sm">
-        <p className="text-sm font-medium text-center text-gray-700 leading-relaxed">
+      <div className="mt-4 p-4 bg-primary/10 border-2 border-primary/20 rounded-lg shadow-sm">
+        <p className="text-sm font-medium text-center text-foreground leading-relaxed">
           Want to build apps like this? <br />
           <a
             href="https://buildfastwithai.com/genai-course?ref=nano-image-app"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm shadow-2xs"
+            className="inline-block mt-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 px-4 rounded-lg transition-colors text-sm shadow-2xs"
           >
             Sign up for Gen AI Launchpad
           </a>

@@ -10,25 +10,25 @@ const nodeTypes = [
     type: "imageUpload",
     label: "Upload",
     icon: Upload,
-    color: "text-blue-500",
-    bgColor: "bg-blue-50 hover:bg-blue-100",
-    borderColor: "border-blue-200",
+    color: "text-primary",
+    bgColor: "bg-primary/10 hover:bg-primary/20",
+    borderColor: "border-primary/20",
   },
   {
     type: "editImage",
     label: "Edit",
     icon: Edit,
-    color: "text-orange-500",
-    bgColor: "bg-orange-50 hover:bg-orange-100",
-    borderColor: "border-orange-200",
+    color: "text-secondary",
+    bgColor: "bg-secondary/10 hover:bg-secondary/20",
+    borderColor: "border-secondary/20",
   },
   {
     type: "generateImage",
     label: "Generate",
     icon: Palette,
-    color: "text-purple-500",
-    bgColor: "bg-purple-50 hover:bg-purple-100",
-    borderColor: "border-purple-200",
+    color: "text-accent",
+    bgColor: "bg-accent/10 hover:bg-accent/20",
+    borderColor: "border-accent/20",
   },
 ];
 
@@ -41,9 +41,11 @@ export default function MobileNodeTabs() {
   };
 
   const handleClick = (nodeType: string) => {
-    // Generate random position for mobile clicks
-    const x = Math.random() * 300 + 100;
-    const y = Math.random() * 200 + 100;
+    // Place nodes in center of visible canvas area for mobile
+    const canvasWidth = window.innerWidth;
+    const canvasHeight = window.innerHeight - 180; // Account for header (~100px) + bottom tabs (~80px)
+    const x = canvasWidth / 2 - 160; // Center horizontally (node width is ~320px)
+    const y = canvasHeight / 2 - 100; // Center vertically
 
     const newNode: Node = {
       id: `${nodeType}-${Date.now()}`,

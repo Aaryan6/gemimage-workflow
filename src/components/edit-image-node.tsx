@@ -7,7 +7,7 @@ import { Handle, Position } from "@xyflow/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Loader2, X } from "lucide-react";
+import { Edit, Loader2, X, Trash2 } from "lucide-react";
 import { useWorkflowStore } from "@/stores/workflow-store"
 import { getApiKey } from "@/lib/api-utils";
 
@@ -33,6 +33,7 @@ export default function EditImageNode({
   const nodeData = data as EditImageNodeData;
   const [prompt, setPrompt] = useState(nodeData?.prompt || "");
   const [inputImages, setInputImages] = useState<string[]>([]);
+  const [removedImages, setRemovedImages] = useState<Set<number>>(new Set());
   const { updateNode, nodes, edges, addNode, removeNode } = useWorkflowStore();
 
   // Memoize the connected inputs calculation to prevent unnecessary recalculations
@@ -52,6 +53,7 @@ export default function EditImageNode({
       JSON.stringify(connectedInputs) !== JSON.stringify(inputImages);
     if (hasChanged) {
       setInputImages(connectedInputs);
+      setRemovedImages(new Set()); // Reset removed images when inputs change
     }
   }, [connectedInputs, inputImages]);
 
@@ -63,18 +65,41 @@ export default function EditImageNode({
     [id, updateNode]
   );
 
+  const handleRemoveImage = useCallback(
+    (index: number) => {
+      setRemovedImages(prev => new Set([...prev, index]));
+    },
+    []
+  );
+
+  const handleRestoreImage = useCallback(
+    (index: number) => {
+      setRemovedImages(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+    },
+    []
+  );
+
+  // Filter out removed images for processing
+  const activeImages = useMemo(() => {
+    return inputImages.filter((_, index) => !removedImages.has(index));
+  }, [inputImages, removedImages]);
+
   const handleEdit = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
 
-      if (!prompt.trim() || inputImages.length === 0) return;
+      if (!prompt.trim() || activeImages.length === 0) return;
 
       updateNode(id, { isProcessing: true, error: null });
 
       try {
         const requestBody: { images: string[]; prompt: string; apiKey?: string } = {
-          images: inputImages,
+          images: activeImages,
           prompt: prompt,
         }
 
@@ -138,7 +163,7 @@ export default function EditImageNode({
         });
       }
     },
-    [id, prompt, inputImages, updateNode, nodes, addNode]
+    [id, prompt, activeImages, updateNode, nodes, addNode]
   );
 
   const handleDelete = useCallback(
@@ -157,13 +182,13 @@ export default function EditImageNode({
         size="sm"
         onClick={handleDelete}
         onMouseDown={(e) => e.stopPropagation()}
-        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground border-2 border-background shadow-sm z-10"
         type="button"
       >
         <X className="w-3 h-3" />
       </Button>
       <div className="flex items-center gap-2 mb-3">
-        <Edit className="w-4 h-4 text-orange-500" />
+        <Edit className="w-4 h-4 text-secondary" />
         <span className="font-medium text-sm">Edit Image</span>
       </div>
 
@@ -189,16 +214,44 @@ export default function EditImageNode({
           <div>
             <div className="grid grid-cols-1 gap-2 overflow-y-auto">
               {inputImages.slice(0, 4).map((image, index) => (
-                <img
-                  key={index}
-                  src={image || "/placeholder.svg"}
-                  alt={`Input ${index + 1}`}
-                  className="w-full aspect-video object-cover rounded border"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "/placeholder.svg?height=80&width=80&text=Error";
-                  }}
-                />
+                <div key={index} className="relative group">
+                  <img
+                    src={image || "/placeholder.svg"}
+                    alt={`Input ${index + 1}`}
+                    className={`w-full aspect-video object-cover rounded border transition-opacity ${
+                      removedImages.has(index) ? 'opacity-30' : 'opacity-100'
+                    }`}
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "/placeholder.svg?height=80&width=80&text=Error";
+                    }}
+                  />
+                  {removedImages.has(index) ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleRestoreImage(index)}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="text-xs px-2 py-1 h-auto"
+                        type="button"
+                      >
+                        Restore
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveImage(index)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      className="absolute top-1 right-1 w-6 h-6 p-0 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      type="button"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
               ))}
               {inputImages.length > 4 && (
                 <div className="w-full h-20 bg-muted rounded border flex items-center justify-center text-xs text-muted-foreground">
@@ -206,6 +259,11 @@ export default function EditImageNode({
                 </div>
               )}
             </div>
+            {activeImages.length < inputImages.length && (
+              <div className="text-xs text-muted-foreground mt-2">
+                Using {activeImages.length} of {inputImages.length} images
+              </div>
+            )}
           </div>
         ) : (
           <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
@@ -214,7 +272,7 @@ export default function EditImageNode({
         )}
 
         {nodeData?.error && (
-          <div className="text-xs text-red-500 bg-red-50 p-2 rounded">
+          <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
             Error: {nodeData.error}
           </div>
         )}
@@ -224,11 +282,11 @@ export default function EditImageNode({
           onMouseDown={(e) => e.stopPropagation()}
           disabled={
             !prompt.trim() ||
-            inputImages.length === 0 ||
+            activeImages.length === 0 ||
             nodeData?.isProcessing
           }
           size="sm"
-          className="w-full bg-orange-600 hover:bg-orange-700 touch-manipulation"
+          className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground touch-manipulation"
           type="button"
         >
           {nodeData?.isProcessing ? (
@@ -246,12 +304,12 @@ export default function EditImageNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 bg-orange-500 border-2 border-white"
+        className="w-3 h-3 bg-secondary border-2 border-background"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 bg-orange-500 border-2 border-white"
+        className="w-3 h-3 bg-secondary border-2 border-background"
       />
     </Card>
   );
