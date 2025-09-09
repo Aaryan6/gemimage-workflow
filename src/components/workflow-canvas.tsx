@@ -107,7 +107,46 @@ export default function WorkflowCanvas() {
   );
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative pb-20 md:pb-0">
+      {/* Empty state instructor overlay */}
+      {nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <div className="bg-background/80 border border-border rounded-xl p-6 max-w-md mx-4 opacity-60">
+            <h3 className="text-lg font-semibold text-foreground mb-3 text-center">
+              Get Started
+            </h3>
+            <ol className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="font-bold text-foreground">1.</span>
+                <span>
+                  Enter your <strong>Gemini API key</strong> in settings
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold text-foreground">2.</span>
+                <span>
+                  <strong>Drag</strong> components from the sidebar to the
+                  canvas
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold text-foreground">3.</span>
+                <span>
+                  <strong>Connect</strong> nodes by clicking output dots then
+                  input dots
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold text-foreground">4.</span>
+                <span>
+                  <strong>Process</strong> nodes to generate/edit images
+                </span>
+              </li>
+            </ol>
+          </div>
+        </div>
+      )}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}

@@ -6,6 +6,7 @@ import Sidebar from "./sidebar";
 import SettingsPanel from "./settings-panel";
 import { useWorkflowStore } from "@/stores/workflow-store";
 import { Settings, Menu } from "lucide-react";
+import MobileNodeTabs from "./mobile-node-tabs";
 
 export default function WorkflowBuilder() {
   const { clearWorkflow } = useWorkflowStore();
@@ -21,9 +22,7 @@ export default function WorkflowBuilder() {
       {/* Mobile Sidebar Overlay */}
       {showSidebar && (
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden">
-          <div className="w-80 h-full bg-background">
-            <Sidebar onClose={() => setShowSidebar(false)} />
-          </div>
+          <Sidebar onClose={() => setShowSidebar(false)} />
         </div>
       )}
 
@@ -47,13 +46,15 @@ export default function WorkflowBuilder() {
               <Menu className="w-4 h-4" />
             </Button>
             <h1 className="text-lg md:text-2xl font-semibold text-foreground">
-              <span className="hidden sm:inline">Nano Banana Image Workflow 🍌</span>
+              <span className="hidden sm:inline">
+                Nano Banana Image Workflow 🍌
+              </span>
               <span className="sm:hidden">Workflow 🍌</span>
             </h1>
           </div>
           <div className="flex gap-1 md:gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setShowSettings(true)}
               className="px-2 md:px-3"
@@ -61,8 +62,8 @@ export default function WorkflowBuilder() {
               <Settings className="w-4 h-4 md:mr-2" />
               <span className="hidden md:inline">Settings</span>
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleClearWorkflow}
               className="px-2 md:px-3"
@@ -83,6 +84,9 @@ export default function WorkflowBuilder() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
+
+      {/* Mobile Bottom Tabs */}
+      <MobileNodeTabs />
     </div>
   );
 }

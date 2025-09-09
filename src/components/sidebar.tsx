@@ -68,10 +68,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
     <div className="w-64 md:w-64 bg-sidebar border-r border-sidebar-border p-4 h-full overflow-y-auto space-y-4">
       {/* Mobile close button */}
       {onClose && (
-        <div className="flex justify-between items-center mb-4 md:hidden">
-          <h2 className="text-lg font-semibold text-sidebar-foreground">
-            Components
-          </h2>
+        <div className="flex justify-end items-center mb-4 md:hidden">
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
@@ -122,7 +119,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 hidden md:block">
         {nodeTypes.map((nodeType) => {
           const Icon = nodeType.icon;
           return (
@@ -151,34 +148,33 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
         <p className="font-medium mb-2">How to use:</p>
         <ol className="space-y-1 text-xs">
           <li>
-            1. <b>Drag</b> components to canvas
-          </li>
-          <li className="hidden md:block">
-            2. <b>Connect</b> nodes from dots
-          </li>
-          <li className="md:hidden">
-            2. Tap output ports then input ports to connect
+            1. Enter <b>API key</b> in settings
           </li>
           <li>
-            3. Enter <b>API key</b> in node settings
+            2. <b>Drag</b> components to canvas
+          </li>
+          <li className="hidden md:block">
+            3. <b>Connect</b> nodes from dots
+          </li>
+          <li className="md:hidden">
+            4. Tap output ports then input ports to connect
           </li>
           <li>4. Process nodes to generate/edit images</li>
         </ol>
       </div>
 
       {/* Bottom CTA */}
-      <div className="mt-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-        <p className="text-xs text-center text-gray-700 leading-relaxed">
+      <div className="mt-4 p-4 bg-blue-100 border-2 border-blue-200 rounded-lg shadow-sm">
+        <p className="text-sm font-medium text-center text-gray-700 leading-relaxed">
           Want to build apps like this? <br />
           <a
             href="https://buildfastwithai.com/genai-course?ref=nano-image-app"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 font-medium underline transition-colors"
+            className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm shadow-2xs"
           >
-            Sign up
-          </a>{" "}
-          for Build Fast with AI&apos;s Gen AI Launchpad
+            Sign up for Gen AI Launchpad
+          </a>
         </p>
       </div>
     </div>
