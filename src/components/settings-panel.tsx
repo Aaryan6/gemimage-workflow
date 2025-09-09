@@ -48,9 +48,14 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">Gemini API Settings</h2>
+            <h2 className="text-lg font-semibold">Settings</h2>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="touch-manipulation">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="touch-manipulation"
+          >
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -78,11 +83,15 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           </div>
         </div>
 
-        <div className="flex gap-2 mt-6">
+        <div className="flex gap-2">
           <Button onClick={handleSave} className="flex-1 touch-manipulation">
             Save Settings
           </Button>
-          <Button variant="outline" onClick={onClose} className="touch-manipulation">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="touch-manipulation"
+          >
             Cancel
           </Button>
         </div>

@@ -30,21 +30,28 @@ const nodeTypes = {
 export default function WorkflowCanvas() {
   const { nodes, edges, addNode, setNodes, setEdges } = useWorkflowStore();
 
-  const onNodesChange = useCallback((changes: unknown[]) => {
-    const updatedNodes = changes.reduce((acc: Node[], change: unknown) => {
-      const typedChange = change as { type: string; id: string; position?: { x: number; y: number } };
-      if (typedChange.type === 'position') {
-        return acc.map((node: Node) => 
-          node.id === typedChange.id 
-            ? { ...node, position: typedChange.position || node.position }
-            : node
-        );
-      }
-      return acc;
-    }, nodes);
-    
-    setNodes(updatedNodes);
-  }, [nodes, setNodes]);
+  const onNodesChange = useCallback(
+    (changes: unknown[]) => {
+      const updatedNodes = changes.reduce((acc: Node[], change: unknown) => {
+        const typedChange = change as {
+          type: string;
+          id: string;
+          position?: { x: number; y: number };
+        };
+        if (typedChange.type === "position") {
+          return acc.map((node: Node) =>
+            node.id === typedChange.id
+              ? { ...node, position: typedChange.position || node.position }
+              : node
+          );
+        }
+        return acc;
+      }, nodes);
+
+      setNodes(updatedNodes);
+    },
+    [nodes, setNodes]
+  );
 
   const onEdgesChange = useCallback(() => {
     // Handle edge changes if needed
@@ -113,30 +120,21 @@ export default function WorkflowCanvas() {
         fitView
         className="bg-muted/20"
         // Better mobile interaction
-        panOnScroll
-        panOnScrollSpeed={0.5}
-        zoomOnScroll={false}
+        panOnScroll={false}
+        zoomOnScroll={true}
+        zoomOnDoubleClick={false}
         zoomOnPinch
         panOnDrag
         // Handle connections better on mobile
         snapToGrid
-        snapGrid={[15, 15]}
       >
-        <Controls 
+        <Controls
           className="react-flow__controls"
           showZoom={true}
           showFitView={true}
           showInteractive={false}
           position="bottom-right"
         />
-        {/* Only show MiniMap on larger screens */}
-        <div className="hidden lg:block">
-          <MiniMap 
-            className="react-flow__minimap"
-            zoomable
-            pannable
-          />
-        </div>
         <Background gap={12} size={1} />
       </ReactFlow>
     </div>

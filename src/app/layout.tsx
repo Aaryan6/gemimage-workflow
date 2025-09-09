@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nano Banana Image Workflow",
   description: "AI-powered image generation and editing workflow builder",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+  viewport:
+    "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
 };
 
 export default function RootLayout({
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.className} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>

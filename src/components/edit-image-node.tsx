@@ -7,7 +7,7 @@ import { Handle, Position } from "@xyflow/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Loader2 } from "lucide-react";
+import { Edit, Loader2, X } from "lucide-react";
 import { useWorkflowStore } from "@/stores/workflow-store"
 import { getApiKey } from "@/lib/api-utils";
 
@@ -33,7 +33,7 @@ export default function EditImageNode({
   const nodeData = data as EditImageNodeData;
   const [prompt, setPrompt] = useState(nodeData?.prompt || "");
   const [inputImages, setInputImages] = useState<string[]>([]);
-  const { updateNode, nodes, edges, addNode } = useWorkflowStore();
+  const { updateNode, nodes, edges, addNode, removeNode } = useWorkflowStore();
 
   // Memoize the connected inputs calculation to prevent unnecessary recalculations
   const connectedInputs = useMemo(() => {
@@ -145,13 +145,23 @@ export default function EditImageNode({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      updateNode(id, { result: null, output: null, generatedImage: null });
+      removeNode(id);
     },
-    [id, updateNode]
+    [id, removeNode]
   );
 
   return (
-    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleDelete}
+        onMouseDown={(e) => e.stopPropagation()}
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        type="button"
+      >
+        <X className="w-3 h-3" />
+      </Button>
       <div className="flex items-center gap-2 mb-3">
         <Edit className="w-4 h-4 text-orange-500" />
         <span className="font-medium text-sm">Edit Image</span>
@@ -209,41 +219,28 @@ export default function EditImageNode({
           </div>
         )}
 
-        <div className="flex gap-2">
-          <Button
-            onClick={handleEdit}
-            onMouseDown={(e) => e.stopPropagation()}
-            disabled={
-              !prompt.trim() ||
-              inputImages.length === 0 ||
-              nodeData?.isProcessing
-            }
-            size="sm"
-            className="flex-1 bg-orange-600 hover:bg-orange-700 touch-manipulation"
-            type="button"
-          >
-            {nodeData?.isProcessing ? (
-              <>
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                <span className="hidden sm:inline">Editing...</span>
-                <span className="sm:hidden">Edit...</span>
-              </>
-            ) : (
-              "Edit"
-            )}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            onMouseDown={(e) => e.stopPropagation()}
-            disabled={!nodeData?.result && !nodeData?.generatedImage}
-            className="touch-manipulation"
-            type="button"
-          >
-            Delete
-          </Button>
-        </div>
+        <Button
+          onClick={handleEdit}
+          onMouseDown={(e) => e.stopPropagation()}
+          disabled={
+            !prompt.trim() ||
+            inputImages.length === 0 ||
+            nodeData?.isProcessing
+          }
+          size="sm"
+          className="w-full bg-orange-600 hover:bg-orange-700 touch-manipulation"
+          type="button"
+        >
+          {nodeData?.isProcessing ? (
+            <>
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+              <span className="hidden sm:inline">Editing...</span>
+              <span className="sm:hidden">Edit...</span>
+            </>
+          ) : (
+            "Edit"
+          )}
+        </Button>
       </div>
 
       <Handle

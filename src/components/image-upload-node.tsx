@@ -27,7 +27,7 @@ export default function ImageUploadNode({
   const nodeData = data as ImageUploadNodeData;
   const [isDragOver, setIsDragOver] = useState(false);
   const [localImages, setLocalImages] = useState<string[]>([]);
-  const { updateNode } = useWorkflowStore();
+  const { updateNode, removeNode } = useWorkflowStore();
 
   const handleFileUpload = useCallback(
     (files: FileList | null) => {
@@ -78,8 +78,27 @@ export default function ImageUploadNode({
     setIsDragOver(false);
   }, []);
 
+  const handleDeleteNode = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      removeNode(id);
+    },
+    [id, removeNode]
+  );
+
   return (
-    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleDeleteNode}
+        onMouseDown={(e) => e.stopPropagation()}
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        type="button"
+      >
+        <X className="w-3 h-3" />
+      </Button>
       <div className="flex items-center gap-2 mb-3">
         <Upload className="w-4 h-4 text-blue-500" />
         <span className="font-medium text-sm">Image Upload</span>

@@ -25,7 +25,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
   const nodeData = data as GenerateImageNodeData
   const [prompt, setPrompt] = useState(nodeData?.prompt || "")
   const [referenceImages, setReferenceImages] = useState<string[]>([])
-  const { updateNode, nodes, edges, addNode, removeEdgesToNode, removeEdge } = useWorkflowStore()
+  const { updateNode, nodes, edges, addNode, removeEdgesToNode, removeEdge, removeNode } = useWorkflowStore()
 
   // Memoize the connected inputs calculation to prevent unnecessary recalculations
   const connectedInputs = useMemo(() => {
@@ -138,7 +138,16 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
     [id, prompt, updateNode, nodes, addNode],
   )
 
-  const handleDelete = useCallback(
+  const handleDeleteNode = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      removeNode(id)
+    },
+    [id, removeNode]
+  )
+
+  const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation()
       e.preventDefault()
@@ -153,7 +162,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
       setPrompt("")
       setReferenceImages([])
     },
-    [id, updateNode],
+    [id, updateNode]
   )
 
   const handleRemoveReferenceImages = useCallback(
@@ -185,7 +194,17 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
   )
 
   return (
-    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border">
+    <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleDeleteNode}
+        onMouseDown={(e) => e.stopPropagation()}
+        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full bg-red-500 hover:bg-red-600 text-white border-2 border-white shadow-sm z-10"
+        type="button"
+      >
+        <X className="w-3 h-3" />
+      </Button>
       <div className="flex items-center gap-2 mb-3">
         <Palette className="w-4 h-4 text-purple-500" />
         <span className="font-medium text-sm">Generate Image</span>
@@ -285,7 +304,7 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
           <Button
             variant="outline"
             size="sm"
-            onClick={handleDelete}
+            onClick={handleClear}
             onMouseDown={(e) => e.stopPropagation()}
             disabled={nodeData?.isProcessing}
             className="touch-manipulation"
