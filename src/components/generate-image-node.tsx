@@ -1,197 +1,215 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useCallback, useEffect, useMemo } from "react"
-import { Handle, Position } from "@xyflow/react"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Palette, Loader2, X } from "lucide-react"
-import { useWorkflowStore } from "@/stores/workflow-store"
-import { getApiKey } from "@/lib/api-utils"
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { Handle, Position } from "@xyflow/react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Palette, Loader2, X } from "lucide-react";
+import { useWorkflowStore } from "@/stores/workflow-store";
+import { getApiKey } from "@/lib/api-utils";
 
 interface GenerateImageNodeData {
-  label: string
-  prompt: string
-  result: string | null
-  isProcessing?: boolean
-  error?: string
-  generatedImage?: string
-  output?: string
+  label: string;
+  prompt: string;
+  result: string | null;
+  isProcessing?: boolean;
+  error?: string;
+  generatedImage?: string;
+  output?: string;
 }
 
-export default function GenerateImageNode({ id, data }: { id: string; data: unknown }) {
-  const nodeData = data as GenerateImageNodeData
-  const [prompt, setPrompt] = useState(nodeData?.prompt || "")
-  const [referenceImages, setReferenceImages] = useState<string[]>([])
-  const { updateNode, nodes, edges, addNode, removeEdgesToNode, removeEdge, removeNode } = useWorkflowStore()
+export default function GenerateImageNode({
+  id,
+  data,
+}: {
+  id: string;
+  data: unknown;
+}) {
+  const nodeData = data as GenerateImageNodeData;
+  const [prompt, setPrompt] = useState(nodeData?.prompt || "");
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const {
+    updateNode,
+    nodes,
+    edges,
+    addNode,
+    removeEdgesToNode,
+    removeEdge,
+    removeNode,
+  } = useWorkflowStore();
 
   // Memoize the connected inputs calculation to prevent unnecessary recalculations
   const connectedInputs = useMemo(() => {
     return edges
       .filter((edge) => edge.target === id)
       .map((edge) => {
-        const sourceNode = nodes.find((n) => n.id === edge.source)
-        return sourceNode?.data?.output as string
+        const sourceNode = nodes.find((n) => n.id === edge.source);
+        return sourceNode?.data?.output as string;
       })
-      .filter(Boolean) as string[]
-  }, [edges, nodes, id])
+      .filter(Boolean) as string[];
+  }, [edges, nodes, id]);
 
   // Only update reference images if the connected inputs actually changed
   useEffect(() => {
-    const hasChanged = JSON.stringify(connectedInputs) !== JSON.stringify(referenceImages)
+    const hasChanged =
+      JSON.stringify(connectedInputs) !== JSON.stringify(referenceImages);
     if (hasChanged) {
-      setReferenceImages(connectedInputs)
+      setReferenceImages(connectedInputs);
     }
-  }, [connectedInputs, referenceImages])
+  }, [connectedInputs, referenceImages]);
 
   const handlePromptChange = useCallback(
     (value: string) => {
-      setPrompt(value)
-      updateNode(id, { prompt: value })
+      setPrompt(value);
+      updateNode(id, { prompt: value });
     },
-    [id, updateNode],
-  )
+    [id, updateNode]
+  );
 
   const handleGenerate = useCallback(
     async (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
-      
+      e.stopPropagation();
+      e.preventDefault();
 
       if (!prompt.trim()) {
-        return
+        return;
       }
 
-      updateNode(id, { isProcessing: true, error: null })
+      updateNode(id, { isProcessing: true, error: null });
 
       try {
-        const requestBody: { prompt: string; inputImage?: string; inputImages?: string[]; apiKey?: string } = { prompt: prompt }
-        
+        const requestBody: {
+          prompt: string;
+          inputImage?: string;
+          inputImages?: string[];
+          apiKey?: string;
+        } = { prompt: prompt };
+
         // Add reference images as input if available
         if (referenceImages.length > 0) {
           if (referenceImages.length === 1) {
-            requestBody.inputImage = referenceImages[0]
+            requestBody.inputImage = referenceImages[0];
           } else {
-            requestBody.inputImages = referenceImages
+            requestBody.inputImages = referenceImages;
           }
         }
 
         // Get API key from localStorage if available
-        const apiKey = getApiKey()
+        const apiKey = getApiKey();
         if (apiKey) {
-          requestBody.apiKey = apiKey
+          requestBody.apiKey = apiKey;
         }
-        
+
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(requestBody),
-        })
+        });
 
-        const result = await response.json()
+        const result = await response.json();
 
         if (result.success) {
-          
           // Clear the processing state
           updateNode(id, {
             isProcessing: false,
             output: result.imageUrl,
-          })
+          });
 
           // Find current node position
-          const currentNode = nodes.find(n => n.id === id)
-          const baseX = currentNode?.position?.x || 0
-          const baseY = currentNode?.position?.y || 0
+          const currentNode = nodes.find((n) => n.id === id);
+          const baseX = currentNode?.position?.x || 0;
+          const baseY = currentNode?.position?.y || 0;
 
           // Create a new result node
-          const resultNodeId = `result-${Date.now()}`
+          const resultNodeId = `result-${Date.now()}`;
           const newResultNode = {
             id: resultNodeId,
-            type: 'imageResult',
+            type: "imageResult",
             position: {
               x: baseX + 400, // Position to the right of the generate node
-              y: baseY
+              y: baseY,
             },
             data: {
-              label: 'Generated Image',
+              label: "Generated Image",
               imageUrl: result.imageUrl,
               prompt: prompt,
               description: result.description,
               generatedAt: new Date().toLocaleTimeString(),
-              output: result.imageUrl // This allows connecting to other nodes
-            }
-          }
+              output: result.imageUrl, // This allows connecting to other nodes
+            },
+          };
 
-          addNode(newResultNode)
+          addNode(newResultNode);
         } else {
-          throw new Error(result.error)
+          throw new Error(result.error);
         }
       } catch (error) {
         updateNode(id, {
           isProcessing: false,
           error: error instanceof Error ? error.message : "Unknown error",
-        })
+        });
       }
     },
-    [id, prompt, updateNode, nodes, addNode],
-  )
+    [id, prompt, updateNode, nodes, addNode]
+  );
 
   const handleDeleteNode = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
-      removeNode(id)
+      e.stopPropagation();
+      e.preventDefault();
+      removeNode(id);
     },
     [id, removeNode]
-  )
+  );
 
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
-      updateNode(id, { 
-        result: null, 
-        output: null, 
-        generatedImage: null, 
+      e.stopPropagation();
+      e.preventDefault();
+      updateNode(id, {
+        result: null,
+        output: null,
+        generatedImage: null,
         error: null,
         isProcessing: false,
-        prompt: ""
-      })
-      setPrompt("")
-      setReferenceImages([])
+        prompt: "",
+      });
+      setPrompt("");
+      setReferenceImages([]);
     },
     [id, updateNode]
-  )
+  );
 
   const handleRemoveReferenceImages = useCallback(
     (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
+      e.stopPropagation();
+      e.preventDefault();
       // Remove all incoming edges to this node
-      removeEdgesToNode(id)
+      removeEdgesToNode(id);
       // Clear local reference images state
-      setReferenceImages([])
+      setReferenceImages([]);
     },
-    [id, removeEdgesToNode],
-  )
+    [id, removeEdgesToNode]
+  );
 
   const handleRemoveIndividualImage = useCallback(
     (imageIndex: number) => (e: React.MouseEvent) => {
-      e.stopPropagation()
-      e.preventDefault()
-      
+      e.stopPropagation();
+      e.preventDefault();
+
       // Find the edge corresponding to this image index
-      const targetEdges = edges.filter((edge) => edge.target === id)
+      const targetEdges = edges.filter((edge) => edge.target === id);
       if (targetEdges[imageIndex]) {
-        const edgeToRemove = targetEdges[imageIndex]
+        const edgeToRemove = targetEdges[imageIndex];
         // Remove the specific edge
-        removeEdge(edgeToRemove.id)
+        removeEdge(edgeToRemove.id);
       }
     },
-    [id, edges, removeEdge],
-  )
+    [id, edges, removeEdge]
+  );
 
   return (
     <Card className="w-80 md:w-80 sm:w-72 p-3 md:p-4 bg-card border-2 border-border relative">
@@ -212,7 +230,9 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
 
       <div className="space-y-3">
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Generation Prompt</label>
+          <label className="text-xs text-muted-foreground mb-1 block">
+            Generation Prompt
+          </label>
           <Textarea
             value={prompt}
             onChange={(e) => handlePromptChange(e.target.value)}
@@ -229,7 +249,10 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
         {referenceImages.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground">{referenceImages.length} reference image{referenceImages.length > 1 ? 's' : ''}</div>
+              <div className="text-xs text-muted-foreground">
+                {referenceImages.length} reference image
+                {referenceImages.length > 1 ? "s" : ""}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -249,7 +272,8 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
                     alt={`Reference ${index + 1}`}
                     className="w-full h-20 object-cover rounded border"
                     onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg?height=80&width=80&text=Error"
+                      e.currentTarget.src =
+                        "/placeholder.svg?height=80&width=80&text=Error";
                     }}
                   />
                   <Button
@@ -273,7 +297,11 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
           </div>
         )}
 
-        {nodeData?.error && <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">{nodeData.error}</div>}
+        {nodeData?.error && (
+          <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+            {nodeData.error}
+          </div>
+        )}
 
         {nodeData?.isProcessing && (
           <div className="text-xs text-primary bg-primary/10 p-2 rounded">
@@ -315,8 +343,16 @@ export default function GenerateImageNode({ id, data }: { id: string; data: unkn
         </div>
       </div>
 
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-accent border-2 border-background" />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-accent border-2 border-background" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-3 !h-3 bg-accent border-2 border-background"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-3 !h-3 bg-accent border-2 border-background"
+      />
     </Card>
-  )
+  );
 }

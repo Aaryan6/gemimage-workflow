@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit, Loader2, X, Trash2 } from "lucide-react";
-import { useWorkflowStore } from "@/stores/workflow-store"
+import { useWorkflowStore } from "@/stores/workflow-store";
 import { getApiKey } from "@/lib/api-utils";
 
 interface EditImageNodeData {
@@ -65,23 +65,17 @@ export default function EditImageNode({
     [id, updateNode]
   );
 
-  const handleRemoveImage = useCallback(
-    (index: number) => {
-      setRemovedImages(prev => new Set([...prev, index]));
-    },
-    []
-  );
+  const handleRemoveImage = useCallback((index: number) => {
+    setRemovedImages((prev) => new Set([...prev, index]));
+  }, []);
 
-  const handleRestoreImage = useCallback(
-    (index: number) => {
-      setRemovedImages(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(index);
-        return newSet;
-      });
-    },
-    []
-  );
+  const handleRestoreImage = useCallback((index: number) => {
+    setRemovedImages((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+  }, []);
 
   // Filter out removed images for processing
   const activeImages = useMemo(() => {
@@ -98,15 +92,19 @@ export default function EditImageNode({
       updateNode(id, { isProcessing: true, error: null });
 
       try {
-        const requestBody: { images: string[]; prompt: string; apiKey?: string } = {
+        const requestBody: {
+          images: string[];
+          prompt: string;
+          apiKey?: string;
+        } = {
           images: activeImages,
           prompt: prompt,
-        }
+        };
 
         // Get API key from localStorage if available
-        const apiKey = getApiKey()
+        const apiKey = getApiKey();
         if (apiKey) {
-          requestBody.apiKey = apiKey
+          requestBody.apiKey = apiKey;
         }
 
         const response = await fetch("/api/edit", {
@@ -219,7 +217,7 @@ export default function EditImageNode({
                     src={image || "/placeholder.svg"}
                     alt={`Input ${index + 1}`}
                     className={`w-full aspect-video object-cover rounded border transition-opacity ${
-                      removedImages.has(index) ? 'opacity-30' : 'opacity-100'
+                      removedImages.has(index) ? "opacity-30" : "opacity-100"
                     }`}
                     onError={(e) => {
                       e.currentTarget.src =
@@ -304,12 +302,12 @@ export default function EditImageNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 bg-secondary border-2 border-background"
+        className="!w-3 !h-3 bg-secondary border-2 border-background"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 bg-secondary border-2 border-background"
+        className="!w-3 !h-3 bg-secondary border-2 border-background"
       />
     </Card>
   );
